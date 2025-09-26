@@ -19,6 +19,17 @@ def calculate_barrier_metrics(prices, lookback_days=126, horizon_days=30):
                 distance = np.log(current_price / barrier)
                 prob = norm.cdf(-distance / (vol * np.sqrt(horizon_days / 252)))
             probs.append(prob)
+        
+        avg_prob = np.mean(probs)
+
+        # 🔑 Generate trading signal
+        if avg_prob > 0.7:
+            signal = "SELL"
+        elif avg_prob < 0.3:
+            signal = "BUY"
+        else:
+            signal = "HOLD"
+
         metrics.append({
             'date': prices.index[i],
             'price': current_price,
@@ -26,9 +37,11 @@ def calculate_barrier_metrics(prices, lookback_days=126, horizon_days=30):
             'barrier_5pct': probs[0],
             'barrier_10pct': probs[1],
             'barrier_15pct': probs[2],
-            'avg_barrier_prob': np.mean(probs)
+            'avg_barrier_prob': avg_prob,
+            'signal': signal
         })
     return pd.DataFrame(metrics)
+
 
 def calculate_correlations(returns_data, lookback=63):
     correlations = {}
@@ -40,3 +53,19 @@ def calculate_correlations(returns_data, lookback=63):
         else:
             correlations[(s1, s2)] = 0
     return correlations
+
+
+def portfolio_signals(barrier_dfs, returns_data, lookback=63):
+    """
+    Combine individual asset signals with correlation filter.
+    """
+    correlations = calculate_correlations(returns_data, lookback)
+    latest_signals = {asset: df.iloc[-1]['signal'] for asset, df in barrier_dfs.items()}
+
+    # Apply correlation filter
+    for (a1, a2), corr in correlations.items():
+        if corr > 0.8 and latest_signals[a1] == latest_signals[a2] == "BUY":
+            # Too correlated → avoid doubling risk
+            latest_signals[a2] = "HOLD"
+
+    return latest_signals
