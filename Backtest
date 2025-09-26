@@ -1,0 +1,20 @@
+import pandas as pd
+from .data import fetch_multiple_stocks
+from .signals import calculate_barrier_metrics, calculate_correlations
+from .report import plot_portfolio_results, print_report
+
+class BacktestEngine:
+    def __init__(self, initial_capital=100000, transaction_cost=0.001):
+        self.initial_capital = initial_capital
+        self.transaction_cost = transaction_cost
+        self.results = {}
+
+    def run(self, tickers, start_date, end_date):
+        prices = fetch_multiple_stocks(tickers, start_date, end_date)
+        returns = prices.pct_change().dropna()
+        # simplified loop...
+        # 1. compute signals
+        # 2. rebalance
+        # 3. update portfolio
+        self.results = {"portfolio_values": [], "benchmark_values": [], "dates": []}
+        return self.results
