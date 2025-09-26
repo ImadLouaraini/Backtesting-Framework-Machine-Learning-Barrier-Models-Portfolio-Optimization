@@ -1,0 +1,9 @@
+from backtest import BacktestEngine
+
+if __name__ == "__main__":
+    engine = BacktestEngine()
+    res = engine.run(
+        tickers=['AAPL','MSFT','GOOGL'],
+        start_date="2020-01-01",
+        end_date="2024-01-01"
+    )
