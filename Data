@@ -1,0 +1,28 @@
+import yfinance as yf
+import pandas as pd
+import numpy as np
+
+def fetch_multiple_stocks(tickers, start_date, end_date, log=print):
+    log(f"Fetching data for {len(tickers)} stocks...")
+    raw = yf.download(
+        tickers, start=start_date, end=end_date,
+        auto_adjust=True, group_by='ticker', progress=False, threads=True
+    )
+    if raw is None or len(raw) == 0:
+        raise ValueError("No price data returned from yfinance.")
+
+    if isinstance(raw.columns, pd.MultiIndex):
+        closes = {}
+        for ticker in tickers:
+            for col in [('Close', ticker), ('Adj Close', ticker),
+                        (ticker, 'Close'), (ticker, 'Adj Close')]:
+                if col in raw.columns:
+                    closes[ticker] = raw[col]
+                    break
+        data = pd.DataFrame(closes)
+    else:
+        col = 'Close' if 'Close' in raw.columns else 'Adj Close'
+        name = tickers[0] if isinstance(tickers, (list, tuple)) else str(tickers)
+        data = raw[col].rename(name).to_frame()
+
+    return data.dropna(axis=1, how='all').dropna(how='all')
